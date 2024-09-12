@@ -1,0 +1,6 @@
+@QuoteAPI_HostAddress = http://localhost:5005
+
+GET {{QuoteAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
