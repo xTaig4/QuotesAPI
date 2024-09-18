@@ -28,11 +28,28 @@ namespace QuoteAPI.Controllers
             return await _context.Quotes.ToListAsync();
         }
 
-        // GET: api/Quotes/5
+        // GET: api/Quotes/id
         [HttpGet("{id}")]
         public async Task<ActionResult<Quote>> GetQuote(int id)
         {
             var quote = await _context.Quotes.FindAsync(id);
+
+            if (quote == null)
+            {
+                return NotFound();
+            }
+
+            return quote;
+        }
+
+        [HttpGet("Random/Quote")]
+        public async Task<ActionResult<Quote>> GetRandomQuote()
+        {
+            var quotesTotals = _context.Quotes.Count();
+
+            int quoteId = new Random().Next(1, quotesTotals + 1);
+
+            var quote = await _context.Quotes.FindAsync(quoteId);
 
             if (quote == null)
             {
