@@ -45,7 +45,7 @@ namespace QuoteAPI.Controllers
         [HttpGet("Random/Quote")]
         public async Task<ActionResult<Quote>> GetRandomQuote()
         {
-            var quotesTotals = _context.Quotes.Count();
+            int quotesTotals = _context.Quotes.Count();
 
             int quoteId = new Random().Next(1, quotesTotals + 1);
 
@@ -57,6 +57,31 @@ namespace QuoteAPI.Controllers
             }
 
             return quote;
+        }
+
+        [HttpGet("Random/Quote/{firstName}")]
+        public Task<ActionResult<Quote>> GetRndQuoteFromCharacter(string firstName)
+        {
+            Dictionary<int, Quote> quotesCollection = new Dictionary<int, Quote>();
+            int tmpId = 0;
+
+            foreach (var quote in _context.Quotes)
+            {
+                if (quote.FirstName == firstName)
+                {
+                    tmpId++;
+                    quotesCollection.Add(tmpId, quote);
+                }
+                else if (quote.FirstName == null)
+                {
+                    return Task.FromResult<ActionResult<Quote>>(NotFound());
+                }
+            }
+
+            int quoteTmpId = new Random().Next(1, quotesCollection.Count + 1);
+            Quote quoteDrawn = quotesCollection[quoteTmpId];
+
+            return Task.FromResult<ActionResult<Quote>>(quoteDrawn);
         }
 
         // PUT: api/Quotes/5
