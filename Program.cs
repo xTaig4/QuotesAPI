@@ -1,11 +1,22 @@
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using QuoteAPI.Data;
+using System.Threading.RateLimiting;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContext<QuoteContext>();
+
+builder.Services.AddRateLimiter(_ => _.AddFixedWindowLimiter(policyName: "fixed", options =>{
+    options.PermitLimit = 4; 
+    options.Window = TimeSpan.FromSeconds(12); 
+    options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst; 
+    options.QueueLimit = 2; 
+}));
+
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name:"AllowAll", builder =>
@@ -13,18 +24,16 @@ builder.Services.AddCors(options =>
         builder.AllowAnyOrigin()
                 .AllowAnyHeader()
                 .AllowAnyMethod();
-        //builder.WithOrigins("http://127.0.0.1:3000/")
-        //       .AllowAnyHeader()
-        //       .AllowAnyMethod();
     });
 });
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.MapControllers().RequireRateLimiting("fixed");
 
 // Use CORS
 app.UseCors("AllowAll");

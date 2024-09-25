@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using QuoteAPI.Data;
 using QuoteAPI.Models;
@@ -21,14 +22,14 @@ namespace QuoteAPI.Controllers
             _context = context;
         }
 
-        // GET: api/Quotes
+        [EnableRateLimiting("fixed")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Quote>>> GetQuotes()
         {
             return await _context.Quotes.ToListAsync();
         }
 
-        // GET: api/Quotes/id
+        [EnableRateLimiting("fixed")]
         [HttpGet("{id}")]
         public async Task<ActionResult<Quote>> GetQuote(int id)
         {
@@ -42,6 +43,7 @@ namespace QuoteAPI.Controllers
             return quote;
         }
 
+        [EnableRateLimiting("fixed")]
         [HttpGet("Random/Quote")]
         public async Task<ActionResult<Quote>> GetRandomQuote()
         {
@@ -59,6 +61,30 @@ namespace QuoteAPI.Controllers
             return quote;
         }
 
+        [EnableRateLimiting("fixed")]
+        [HttpGet("Random/QuoteDTO")]
+        public async Task<ActionResult<QuoteDTO>> GetRandomQuote3()
+        {
+            int quotesTotals = _context.Quotes.Count();
+
+            int quoteId = new Random().Next(1, quotesTotals + 1);
+
+            var quote = await _context.Quotes.FindAsync(quoteId);
+
+            if (quote == null)
+            {
+                return NotFound();
+            }
+
+            return new QuoteDTO() { 
+                FirstName = quote.FirstName, 
+                LastName = quote.LastName, 
+                _Quote = quote._Quote,
+                Image = quote.Image
+            };
+        }
+
+        [EnableRateLimiting("fixed")]
         [HttpGet("Random/Quote/{firstName}")]
         public Task<ActionResult<Quote>> GetRndQuoteFromCharacter(string firstName)
         {
