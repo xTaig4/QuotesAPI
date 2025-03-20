@@ -77,10 +77,11 @@ namespace QuoteAPI.Controllers
             }
 
             return new QuoteDTO() { 
-                FirstName = quote.FirstName, 
-                LastName = quote.LastName, 
-                _Quote = quote._Quote,
-                Image = quote.Image
+                firstName = quote.firstName, 
+                lastName = quote.lastName, 
+                quote = quote.quote,
+                image = quote.image,
+                anime = quote.anime
             };
         }
 
@@ -93,12 +94,12 @@ namespace QuoteAPI.Controllers
 
             foreach (var quote in _context.Quotes)
             {
-                if (quote.FirstName == firstName)
+                if (quote.firstName == firstName)
                 {
                     tmpId++;
                     quotesCollection.Add(tmpId, quote);
                 }
-                else if (quote.FirstName == null)
+                else if (quote.firstName == null)
                 {
                     return Task.FromResult<ActionResult<Quote>>(NotFound());
                 }
