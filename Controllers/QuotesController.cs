@@ -44,14 +44,17 @@ namespace QuoteAPI.Controllers
         }
 
         [EnableRateLimiting("fixed")]
-        [HttpGet("Random/Quote")]
+        [HttpGet("Random/Quote{quote.Id}")]
         public async Task<ActionResult<Quote>> GetRandomQuote()
         {
-            int quotesTotals = _context.Quotes.Count();
+            int quotesTotals = await _context.Quotes.CountAsync();
+            if(quotesTotals == 0)
+            {
+                return NotFound();
+            }   
 
-            int quoteId = new Random().Next(1, quotesTotals + 1);
-
-            var quote = await _context.Quotes.FindAsync(quoteId);
+            int index = Random.Shared.Next(quotesTotals);
+            var quote = await _context.Quotes.OrderBy(q => q.Id).Skip(index).FirstOrDefaultAsync();
 
             if (quote == null)
             {
@@ -63,26 +66,33 @@ namespace QuoteAPI.Controllers
 
         [EnableRateLimiting("fixed")]
         [HttpGet("Random/QuoteDTO")]
-        public async Task<ActionResult<QuoteDTO>> GetRandomQuote3()
+        public async Task<ActionResult<QuoteDTO>> GetRandomQuoteDTO()
         {
-            int quotesTotals = _context.Quotes.Count();
-
-            int quoteId = new Random().Next(1, quotesTotals + 1);
-
-            var quote = await _context.Quotes.FindAsync(quoteId);
-
-            if (quote == null)
+            int total = await _context.Quotes.CountAsync();
+            if(total == 0)
             {
                 return NotFound();
             }
 
-            return new QuoteDTO() { 
-                firstName = quote.firstName, 
-                lastName = quote.lastName, 
-                quote = quote.quote,
-                image = quote.image,
-                anime = quote.anime
-            };
+            int index = Random.Shared.Next(total);
+
+            var quoteDTO = await _context.Quotes.OrderBy(q => q.Id).Skip(index).Select(
+                q => new QuoteDTO
+                {
+                    firstName = q.firstName,
+                    lastName = q.lastName ?? string.Empty,
+                    quote = q.quote ?? string.Empty,
+                    image = q.image ?? string.Empty,
+                    anime = q.anime ?? string.Empty
+                }).FirstOrDefaultAsync();
+
+            if (quoteDTO == null)
+            {
+                return NotFound();
+            }
+
+            return quoteDTO;
+            
         }
 
         [EnableRateLimiting("fixed")]
@@ -144,7 +154,7 @@ namespace QuoteAPI.Controllers
 
         // POST: api/Quotes
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
+        [HttpPost("submit")]
         public async Task<ActionResult<Quote>> PostQuote(Quote quote)
         {
             _context.Quotes.Add(quote);
