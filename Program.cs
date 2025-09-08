@@ -1,7 +1,12 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.Tokens.Experimental;
 using QuoteAPI;
 using QuoteAPI.Data;
+using QuoteAPI.Services;
+using Scalar.AspNetCore;
 using System.Threading.RateLimiting;
 
 
@@ -10,6 +15,22 @@ var myOptions = new RateLimitSettings();
 
 // Add services to the container.
 builder.Services.AddDbContext<QuoteContext>();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options => options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = builder.Configuration["AppSettings:Issuer"],
+        ValidateAudience = true,
+        ValidAudience = builder.Configuration["AppSettings:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(
+            builder.Configuration.GetValue<string>("AppSettings:Token")
+        )),
+        ValidateIssuerSigningKey = true,
+    });
+
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 builder.Configuration.GetSection(RateLimitSettings.MyRateLimit).Bind(myOptions);
 
 builder.Services.AddRateLimiter(_ => _.AddFixedWindowLimiter(policyName: "fixed", options =>{
@@ -38,8 +59,8 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
+builder.Services.AddAuthorization();
+builder.Services.AddOpenApi();
 
 
 var app = builder.Build();
@@ -47,10 +68,17 @@ var app = builder.Build();
 app.MapControllers().RequireRateLimiting("fixed");
 app.UseCors("AllowAll");
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<QuoteContext>();
+    dbContext.Database.EnsureCreated();
+}
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+
 }
 
 app.UseHttpsRedirection();
